@@ -2965,9 +2965,9 @@ export const useGameStore = create<GameState>((set, get) => {
     get().addNotification('本周新挑战已生成！');
   },
 
-  claimChallenge: (challengeId) => {
+  claimChallenge: (challengeId: string) => {
     const state = get();
-    const challenge = state.weeklyChallenges.find(c => c.id === challengeId);
+    const challenge = state.weeklyChallenges.find((c: Challenge) => c.id === challengeId);
     if (!challenge || !challenge.completed || challenge.claimed) return;
     const cash = challenge.reward.cash || 0;
     const rep = challenge.reward.reputation || 0;
@@ -2979,7 +2979,7 @@ export const useGameStore = create<GameState>((set, get) => {
         reputation: Math.min(100, state.playerTeam.reputation + rep),
         fanBase: state.playerTeam.fanBase + fans,
       },
-      weeklyChallenges: state.weeklyChallenges.map(c =>
+      weeklyChallenges: state.weeklyChallenges.map((c: Challenge) =>
         c.id === challengeId ? { ...c, claimed: true } : c
       ),
     });
@@ -2987,9 +2987,9 @@ export const useGameStore = create<GameState>((set, get) => {
   },
 
   // ===== 新增：选手退役与传承系统 =====
-  retirePlayer: (playerId) => {
+  retirePlayer: (playerId: string) => {
     const state = get();
-    const player = state.playerTeam.players.find(p => p.id === playerId);
+    const player = state.playerTeam.players.find((p: Player) => p.id === playerId);
     if (!player) return;
     if (player.age < 28) {
       get().addNotification(`${player.chineseName} 年纪尚轻，不建议退役`);
@@ -3010,10 +3010,10 @@ export const useGameStore = create<GameState>((set, get) => {
     set({
       playerTeam: {
         ...state.playerTeam,
-        players: state.playerTeam.players.filter(p => p.id !== playerId),
+        players: state.playerTeam.players.filter((p: Player) => p.id !== playerId),
         weeklyExpense: Math.max(0, state.playerTeam.weeklyExpense - Math.floor(player.salary / 4)),
       },
-      allPlayers: state.allPlayers.map(p => p.id === playerId ? { ...p, teamId: null, isFreeAgent: true } : p),
+      allPlayers: state.allPlayers.map((p: Player) => p.id === playerId ? { ...p, teamId: null, isFreeAgent: true } : p),
       retiredPlayers: [retired, ...state.retiredPlayers],
     });
     get().addNotification(`${player.chineseName} 正式退役，可前往退役名单将其转化为教练`);
@@ -3026,9 +3026,9 @@ export const useGameStore = create<GameState>((set, get) => {
     get().checkAchievements();
   },
 
-  convertToCoach: (retiredPlayerId) => {
+  convertToCoach: (retiredPlayerId: string) => {
     const state = get();
-    const retired = state.retiredPlayers.find(r => r.id === retiredPlayerId);
+    const retired = state.retiredPlayers.find((r: RetiredPlayer) => r.id === retiredPlayerId);
     if (!retired || retired.isCoach) return;
     const specialtyMap: Record<string, string> = {
       Duelist: '枪法训练',
@@ -3051,7 +3051,7 @@ export const useGameStore = create<GameState>((set, get) => {
     };
     set({
       coaches: [...state.coaches, coach],
-      retiredPlayers: state.retiredPlayers.map(r =>
+      retiredPlayers: state.retiredPlayers.map((r: RetiredPlayer) =>
         r.id === retiredPlayerId ? { ...r, isCoach: true } : r
       ),
       playerTeam: {
