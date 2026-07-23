@@ -62,28 +62,29 @@ const generateAttributes = (rating: number, position: AgentRole, seed: number): 
   const bonus = positionBonus[position];
   
   return {
-    aim: rand(base, 8) + (bonus.aim || 0),
-    gameSense: rand(base - 2, 10) + (bonus.gameSense || 0),
-    teamwork: rand(base - 3, 12) + (bonus.teamwork || 0),
-    utility: rand(base - 5, 15) + (bonus.utility || 0),
-    clutch: rand(base - 2, 10) + (bonus.clutch || 0),
-    entry: rand(base - 4, 12) + (bonus.entry || 0),
-    support: rand(base - 5, 15) + (bonus.support || 0),
-    composure: rand(base - 3, 10) + (bonus.composure || 0),
-    leadership: rand(base - 10, 15),
-    consistency: rand(base - 4, 12),
+    aim: Math.min(99, rand(base, 8) + (bonus.aim || 0)),
+    gameSense: Math.min(99, rand(base - 2, 10) + (bonus.gameSense || 0)),
+    teamwork: Math.min(99, rand(base - 3, 12) + (bonus.teamwork || 0)),
+    utility: Math.min(99, rand(base - 5, 15) + (bonus.utility || 0)),
+    clutch: Math.min(99, rand(base - 2, 10) + (bonus.clutch || 0)),
+    entry: Math.min(99, rand(base - 4, 12) + (bonus.entry || 0)),
+    support: Math.min(99, rand(base - 5, 15) + (bonus.support || 0)),
+    composure: Math.min(99, rand(base - 3, 10) + (bonus.composure || 0)),
+    leadership: Math.min(99, rand(base - 10, 15)),
+    consistency: Math.min(99, rand(base - 4, 12)),
   };
 };
 
-const generateStats = (rating: number, attrs?: PlayerAttributes) => {
+const generateStats = (rating: number, attrs?: PlayerAttributes, seed: number = 0) => {
   const aim = attrs?.aim || rating;
   const clutch = attrs?.clutch || rating;
+  const rand = (offset: number) => Math.abs(Math.sin(seed + 100 + offset));
   return {
     acs: Math.floor(200 + rating * 2.5 + Math.sin(aim) * 30),
     kda: Math.round((1.2 + rating * 0.08 + (aim - 80) * 0.01) * 10) / 10,
     adr: Math.floor(120 + rating * 2 + Math.sin(aim) * 25),
-    hsRate: Math.floor(30 + (aim - 80) * 0.8 + Math.random() * 10),
-    kast: Math.floor(70 + rating * 1.5 + Math.random() * 8),
+    hsRate: Math.floor(30 + (aim - 80) * 0.8 + rand(0) * 10),
+    kast: Math.floor(70 + rating * 1.5 + rand(1) * 8),
     firstBlood: Math.floor(15 + (attrs?.entry || rating - 80) * 0.5),
     clutchRate: Math.floor(40 + (clutch - 80) * 0.8),
   };
@@ -118,7 +119,7 @@ const createPlayer = (
     id, name, chineseName, realName, age, nationality, teamId, position, mainAgents,
     rating, salary, marketValue, potential, morale, fitness, contractYears,
     isFreeAgent, isProspect, achievements,
-    stats: generateStats(rating, attributes),
+    stats: generateStats(rating, attributes, playerIdCounter),
     attributes,
   };
 };
@@ -352,9 +353,9 @@ export const getPlayerById = (id: string): Player | undefined => realPlayers.fin
 
 export const getPlayersByRole = (role: AgentRole): Player[] => realPlayers.filter(p => p.position === role);
 
-export const getAgentByName = (name: string): Agent | undefined => agents.find(a => a.id === name);
+export const getAgentById = (name: string): Agent | undefined => agents.find(a => a.id === name);
 
-export const getPlayerMainAgents = (player: Player): Agent[] => player.mainAgents.map(id => getAgentByName(id)).filter(Boolean) as Agent[];
+export const getPlayerMainAgents = (player: Player): Agent[] => player.mainAgents.map(id => getAgentById(id)).filter(Boolean) as Agent[];
 
 // 计算选手综合评级（基于多维度属性）
 export const calculatePlayerRating = (attrs: PlayerAttributes, position: AgentRole): number => {

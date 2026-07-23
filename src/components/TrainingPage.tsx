@@ -258,10 +258,10 @@ export const TrainingPage = () => {
                       variant="primary"
                       size="sm"
                       fullWidth
-                      disabled={budget < trainingCost || player.rating >= player.potential}
+                      disabled={budget < trainingCost || player.rating >= player.potential || player.fitness < 50}
                       onClick={() => handleTrain(player.id)}
                     >
-                      {player.rating >= player.potential ? '已满级' : budget < trainingCost ? '资金不足' : `综合+1 ($${trainingCost/1000}K)`}
+                      {player.rating >= player.potential ? '已满级' : player.fitness < 50 ? '状态不足' : budget < trainingCost ? '资金不足' : `综合+1 ($${trainingCost/1000}K)`}
                     </VCTButton>
                     <VCTButton
                       variant={selectedPlayerId === player.id ? 'danger' : 'secondary'}
@@ -309,11 +309,13 @@ export const TrainingPage = () => {
                           variant="primary"
                           size="sm"
                           fullWidth
-                          disabled={budget < trainingCost || player.attributes[selectedAttribute] >= 99}
+                          disabled={budget < trainingCost || player.attributes[selectedAttribute] >= 99 || player.fitness < 50}
                           onClick={() => handleTrain(player.id, selectedAttribute)}
                         >
                           {player.attributes[selectedAttribute] >= 99
                             ? '属性已满'
+                            : player.fitness < 50
+                            ? '状态不足'
                             : budget < trainingCost
                             ? '资金不足'
                             : `训练 ${attributeNames[selectedAttribute]} +${trainingGain} ($${trainingCost/1000}K)`}

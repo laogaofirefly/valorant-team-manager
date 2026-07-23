@@ -27,6 +27,64 @@ const SCOUT_COST = 30000;
 
 type TabType = 'scout' | 'youth' | 'draft';
 
+interface ProspectPlayerCardProps {
+  player: Player;
+  compact?: boolean;
+  isOnTeam: boolean;
+  canHirePlayer: boolean;
+  onHire: (player: Player) => void;
+}
+
+const ProspectPlayerCard = ({ player, compact = false, isOnTeam, canHirePlayer, onHire }: ProspectPlayerCardProps) => {
+  const isSigned = player.teamId !== null;
+  const style = roleStyles[player.position] || roleStyles.Duelist;
+
+  if (compact) {
+    return (
+      <VCTCard key={player.id} className={`p-3 border-l-2 ${isOnTeam ? 'border-valorant-red' : style.border}`}>
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-display font-semibold text-sm truncate">{player.chineseName}</p>
+            <p className="text-[10px] text-gray-500 font-tactical">{player.realName} · {player.nationality}</p>
+          </div>
+          <CircularProgress value={player.rating} size={40} color="#00D9FF" />
+        </div>
+        <div className="flex items-center justify-between text-[10px] mb-2">
+          <RoleBadge role={player.position} />
+          <span className="text-valorant-gold font-display font-semibold">{formatCurrency(player.marketValue)}</span>
+        </div>
+        {isSigned && !isOnTeam && (
+          <p className="text-[10px] text-gray-500 font-tactical">▸ 已被其他战队签约</p>
+        )}
+        {isOnTeam && (
+          <p className="text-[10px] text-valorant-red font-tactical">✓ 已加入你的战队</p>
+        )}
+        {!isSigned && (
+          <VCTButton
+            variant="primary"
+            size="sm"
+            fullWidth
+            disabled={!canHirePlayer}
+            onClick={() => onHire(player)}
+          >
+            {!canHirePlayer ? '资金不足' : '签约'}
+          </VCTButton>
+        )}
+      </VCTCard>
+    );
+  }
+
+  return (
+    <VCTCard key={player.id} className="p-2 border-l-2 border-l-valorant-teal">
+      <div className="flex items-center justify-between">
+        <span className="text-white text-xs font-display font-semibold">{player.chineseName}</span>
+        <span className="text-valorant-cyan font-display font-bold text-xs">{player.rating}</span>
+      </div>
+      <p className="text-[10px] text-gray-500 font-tactical">{player.nationality} · {roleNames[player.position]}</p>
+    </VCTCard>
+  );
+};
+
 export const ScoutPage = () => {
   const { playerTeam, scoutPlayer, hirePlayer, allPlayers } = useGameStore();
   const {
@@ -112,57 +170,6 @@ export const ScoutPage = () => {
       ))}
     </div>
   );
-
-  const ProspectPlayerCard = ({ player, compact = false }: { player: Player; compact?: boolean }) => {
-    const isOnTeam = player.teamId === playerTeam.id;
-    const isSigned = player.teamId !== null;
-    const style = roleStyles[player.position];
-
-    if (compact) {
-      return (
-        <VCTCard key={player.id} className={`p-3 border-l-2 ${isOnTeam ? 'border-valorant-red' : style.border}`}>
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-display font-semibold text-sm truncate">{player.chineseName}</p>
-              <p className="text-[10px] text-gray-500 font-tactical">{player.realName} · {player.nationality}</p>
-            </div>
-            <CircularProgress value={player.rating} size={40} color="#00D9FF" />
-          </div>
-          <div className="flex items-center justify-between text-[10px] mb-2">
-            <RoleBadge role={player.position} />
-            <span className="text-valorant-gold font-display font-semibold">{formatCurrency(player.marketValue)}</span>
-          </div>
-          {isSigned && !isOnTeam && (
-            <p className="text-[10px] text-gray-500 font-tactical">▸ 已被其他战队签约</p>
-          )}
-          {isOnTeam && (
-            <p className="text-[10px] text-valorant-red font-tactical">✓ 已加入你的战队</p>
-          )}
-          {!isSigned && (
-            <VCTButton
-              variant="primary"
-              size="sm"
-              fullWidth
-              disabled={!canHire(player)}
-              onClick={() => handleHire(player)}
-            >
-              {!canHire(player) ? '资金不足' : '签约'}
-            </VCTButton>
-          )}
-        </VCTCard>
-      );
-    }
-
-    return (
-      <VCTCard key={player.id} className="p-2 border-l-2 border-l-valorant-teal">
-        <div className="flex items-center justify-between">
-          <span className="text-white text-xs font-display font-semibold">{player.chineseName}</span>
-          <span className="text-valorant-cyan font-display font-bold text-xs">{player.rating}</span>
-        </div>
-        <p className="text-[10px] text-gray-500 font-tactical">{player.nationality} · {roleNames[player.position]}</p>
-      </VCTCard>
-    );
-  };
 
   const renderScoutTab = () => (
     <>
@@ -277,7 +284,7 @@ export const ScoutPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {discoveredProspects.map(player => (
-              <ProspectPlayerCard key={player.id} player={player} compact />
+              <ProspectPlayerCard key={player.id} player={player} compact isOnTeam={player.teamId === playerTeam.id} canHirePlayer={canHire(player)} onHire={handleHire} />
             ))}
           </div>
         )}
@@ -439,7 +446,7 @@ export const ScoutPage = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {availableDraftProspects.map(player => {
-                    const style = roleStyles[player.position];
+                    const style = roleStyles[player.position] || roleStyles.Duelist;
                     const availablePick = myDraftPicks.find(p => !p.selectedPlayerId);
                     return (
                       <div key={player.id} style={{ borderColor: style.accent }} className="border-l-2">
@@ -544,7 +551,7 @@ export const ScoutPage = () => {
               ) : (
                 <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                   {scoutHistory.map(player => (
-                    <ProspectPlayerCard key={player.id} player={player} />
+                    <ProspectPlayerCard key={player.id} player={player} isOnTeam={player.teamId === playerTeam.id} canHirePlayer={canHire(player)} onHire={handleHire} />
                   ))}
                 </div>
               )}

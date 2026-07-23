@@ -140,7 +140,7 @@ export const TeamPage = () => {
                   className="bg-valorant-dark text-white px-3 py-1.5 clip-corner-sm border border-valorant-red/30 font-display"
                   autoFocus
                   onBlur={handleSaveName}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSaveName()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
                 />
                 <VCTButton variant="ghost" size="sm" onClick={handleSaveName}>保存</VCTButton>
               </div>
@@ -156,7 +156,7 @@ export const TeamPage = () => {
           </div>
           <div className="flex items-center gap-3 text-xs font-tactical tracking-wider">
             <span className="text-gray-500">PLAYERS</span>
-            <span className="font-display text-valorant-cyan font-bold text-lg">{playerTeam.players.length}/8</span>
+            <span className="font-display text-valorant-cyan font-bold text-lg">{playerTeam.players.length}/7</span>
           </div>
         </div>
       </VCTCard>
@@ -500,7 +500,7 @@ export const TeamPage = () => {
                   onChange={(e) => setNewSponsor(e.target.value)}
                   placeholder="赞助商名称"
                   className="flex-1 bg-valorant-dark text-white px-3 py-1.5 text-xs clip-corner-sm border border-white/10 font-tactical"
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddSponsor()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddSponsor()}
                 />
                 <VCTButton variant="primary" size="sm" onClick={handleAddSponsor}>签约</VCTButton>
               </div>

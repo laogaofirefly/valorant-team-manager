@@ -104,14 +104,14 @@ export const PlayerCard = ({ player, showAction = false, actionType = 'hire' }: 
       return (
         <button
           onClick={handleAction}
-          disabled={!canTrain || player.rating >= player.potential}
+          disabled={!canTrain || player.rating >= player.potential || player.fitness < 50}
           className={`${baseClass} ${
-            canTrain && player.rating < player.potential
+            canTrain && player.rating < player.potential && player.fitness >= 50
               ? 'bg-valorant-cyan hover:bg-cyan-400 text-valorant-dark'
               : 'bg-gray-800 text-gray-500 cursor-not-allowed'
           }`}
         >
-          {player.rating >= player.potential ? '已满级' : `训练 $10,000`}
+          {player.rating >= player.potential ? '已满级' : player.fitness < 50 ? '状态不足' : `训练 $10,000`}
         </button>
       );
     }

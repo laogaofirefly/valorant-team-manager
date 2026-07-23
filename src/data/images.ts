@@ -12,9 +12,9 @@ type ImageSize =
   | 'landscape_4_3'
   | 'landscape_16_9';
 
-// 构建图片URL，prompt 使用 encodeURI 编码
+// 构建图片URL，prompt 使用 encodeURIComponent 编码
 const buildImageUrl = (prompt: string, imageSize: ImageSize): string => {
-  return `${IMAGE_API_BASE}?prompt=${encodeURI(prompt)}&image_size=${imageSize}`;
+  return `${IMAGE_API_BASE}?prompt=${encodeURIComponent(prompt)}&image_size=${imageSize}`;
 };
 
 // 选手位置类型，用于索引按定位生成的头像背景图

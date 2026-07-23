@@ -82,9 +82,9 @@ export const AchievementsPage = () => {
                     <p className="font-display font-bold text-white text-sm truncate">{ach.name}</p>
                     <p className="text-xs text-gray-400 font-tactical">{ach.description}</p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {ach.reward.cash && <Badge variant="success" size="sm">+${formatCurrency(ach.reward.cash)}</Badge>}
-                      {ach.reward.reputation && <Badge variant="info" size="sm">声望+{ach.reward.reputation}</Badge>}
-                      {ach.reward.fans && <Badge variant="primary" size="sm">粉丝+{ach.reward.fans.toLocaleString()}</Badge>}
+                      {(ach.reward.cash ?? 0) > 0 && <Badge variant="success" size="sm">+${formatCurrency(ach.reward.cash!)}</Badge>}
+                      {(ach.reward.reputation ?? 0) > 0 && <Badge variant="info" size="sm">声望+{ach.reward.reputation}</Badge>}
+                      {(ach.reward.fans ?? 0) > 0 && <Badge variant="primary" size="sm">粉丝+{ach.reward.fans!.toLocaleString()}</Badge>}
                     </div>
                   </div>
                 </div>
@@ -125,9 +125,9 @@ export const AchievementsPage = () => {
                 进度: {c.progress} / {c.target}
               </p>
               <div className="flex flex-wrap gap-1 mb-2">
-                {c.reward.cash && <Badge variant="success" size="sm">+${formatCurrency(c.reward.cash)}</Badge>}
-                {c.reward.reputation && <Badge variant="info" size="sm">声望+{c.reward.reputation}</Badge>}
-                {c.reward.fans && <Badge variant="primary" size="sm">粉丝+{c.reward.fans.toLocaleString()}</Badge>}
+                {(c.reward.cash ?? 0) > 0 && <Badge variant="success" size="sm">+${formatCurrency(c.reward.cash!)}</Badge>}
+                {(c.reward.reputation ?? 0) > 0 && <Badge variant="info" size="sm">声望+{c.reward.reputation}</Badge>}
+                {(c.reward.fans ?? 0) > 0 && <Badge variant="primary" size="sm">粉丝+{c.reward.fans!.toLocaleString()}</Badge>}
               </div>
               {c.completed && !c.claimed && (
                 <VCTButton variant="primary" size="sm" onClick={() => claimChallenge(c.id)} className="w-full">
@@ -168,9 +168,9 @@ export const AchievementsPage = () => {
                       <p className="text-xs text-gray-500 font-tactical">{ach.description}</p>
                       {ach.unlocked && (
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {ach.reward.cash && <Badge variant="success" size="sm">+${formatCurrency(ach.reward.cash)}</Badge>}
-                          {ach.reward.reputation && <Badge variant="info" size="sm">声望+{ach.reward.reputation}</Badge>}
-                          {ach.reward.fans && <Badge variant="primary" size="sm">粉丝+{ach.reward.fans.toLocaleString()}</Badge>}
+                          {(ach.reward.cash ?? 0) > 0 && <Badge variant="success" size="sm">+${formatCurrency(ach.reward.cash!)}</Badge>}
+                          {(ach.reward.reputation ?? 0) > 0 && <Badge variant="info" size="sm">声望+{ach.reward.reputation}</Badge>}
+                          {(ach.reward.fans ?? 0) > 0 && <Badge variant="primary" size="sm">粉丝+{ach.reward.fans!.toLocaleString()}</Badge>}
                         </div>
                       )}
                       {ach.unlocked && ach.unlockedWeek && (

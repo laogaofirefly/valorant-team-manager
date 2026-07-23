@@ -592,6 +592,12 @@ export const useGameStore = create<GameState>((set, get) => {
     const player = state.allPlayers.find(p => p.id === playerId);
     if (!player || player.teamId !== null) return;
 
+    const isRetired = state.retiredPlayers.some(r => r.playerId === playerId);
+    if (isRetired) {
+      get().addNotification('退役选手无法重新签约');
+      return;
+    }
+
     // 转会窗校验：自由选手签约需要转会窗开放
     if (!isTransferWindowOpenAt(state.currentWeek)) {
       get().addNotification('转会窗关闭中，无法签约自由选手');
@@ -707,6 +713,11 @@ export const useGameStore = create<GameState>((set, get) => {
       get().addNotification('未找到你方交易选手');
       return;
     }
+    const isLoaned = state.activeLoans.some(l => l.playerId === myPlayerId);
+    if (isLoaned) {
+      get().addNotification('租借选手无法交易');
+      return;
+    }
     const targetPlayer = state.allPlayers.find(p => p.id === targetPlayerId);
     if (!targetPlayer || targetPlayer.teamId === null || targetPlayer.teamId === 'my-team') {
       get().addNotification('目标选手不可交易');
@@ -720,9 +731,10 @@ export const useGameStore = create<GameState>((set, get) => {
 
     // 计算差价：目标选手市场价 - 我方选手市场价
     const priceDiff = targetPlayer.marketValue - myPlayer.marketValue;
+    const requiredPayment = Math.max(0, priceDiff);
     // 玩家补的差价必须覆盖价差
-    if (additionalMoney < priceDiff) {
-      get().addNotification(`补差价不足，至少需要 $${priceDiff.toLocaleString()}`);
+    if (additionalMoney < requiredPayment) {
+      get().addNotification(`补差价不足，至少需要 $${requiredPayment.toLocaleString()}`);
       return;
     }
     if (state.playerTeam.budget < additionalMoney) {
@@ -996,12 +1008,15 @@ export const useGameStore = create<GameState>((set, get) => {
     
     // AI战队积分更新
     if (newPhase === 'regular') {
-      const updatedStandings = state.vctStandings.map(s => ({
-        ...s,
-        wins: s.wins + (Math.random() < 0.5 ? 1 : 0),
-        losses: s.losses + (Math.random() < 0.5 ? 1 : 0),
-        points: s.points + (Math.random() < 0.5 ? 3 : 0),
-      }));
+      const updatedStandings = state.vctStandings.map(s => {
+        const won = Math.random() < 0.5;
+        return {
+          ...s,
+          wins: s.wins + (won ? 1 : 0),
+          losses: s.losses + (won ? 0 : 1),
+          points: s.points + (won ? 3 : 0),
+        };
+      });
       set({ vctStandings: updatedStandings });
     }
 
@@ -1065,10 +1080,10 @@ export const useGameStore = create<GameState>((set, get) => {
         resolvedAuctions.push(finalAuction);
 
         if (finalAuction.status === 'won') {
-          // 扣除尾款并加入战队
-          auctionBudgetChange -= finalAuction.currentBid;
           const player = state.allPlayers.find(p => p.id === finalAuction.playerId);
           if (player && player.teamId === null && (state.playerTeam.players.length + auctionSignedPlayers.length) < 7) {
+            // 扣除尾款并加入战队
+            auctionBudgetChange -= finalAuction.currentBid;
             const signedPlayer = { ...player, teamId: state.playerTeam.id, isFreeAgent: false, contractYears: 2 };
             auctionSignedPlayers.push(signedPlayer);
             auctionSalaryChange += Math.floor(player.salary / 4);
@@ -1082,6 +1097,9 @@ export const useGameStore = create<GameState>((set, get) => {
               title: '拍卖中标',
               content: `${state.playerTeam.name}在转会拍卖中以$${finalAuction.currentBid.toLocaleString()}签下${player.chineseName}`,
             });
+          } else {
+            // 阵容已满或选手不可签约，不扣预算（退款）
+            auctionNotifications.push(`拍卖中标但阵容已满，${player?.chineseName || '选手'} 未能加入，已退款 $${finalAuction.currentBid.toLocaleString()}`);
           }
         } else if (finalAuction.currentBidder && finalAuction.currentBidder !== 'player') {
           const winnerTeam = getTeamById(finalAuction.currentBidder);
@@ -1170,7 +1188,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     // 粉丝增长与声望
     const fanGrowth = Math.floor(state.playerTeam.fanBase * 0.005) + Math.floor(fanGain);
-    const reputationChange = state.playerTeam.seasonWins > state.playerTeam.seasonLosses ? 1 : -1;
+    const reputationChange = state.playerTeam.seasonWins > state.playerTeam.seasonLosses ? 1 : state.playerTeam.seasonWins === state.playerTeam.seasonLosses ? 0 : -1;
 
     // 更新allPlayers中拍卖签约球员状态
     const auctionPlayerIds = new Set(auctionSignedPlayers.map(p => p.id));
@@ -1191,9 +1209,9 @@ export const useGameStore = create<GameState>((set, get) => {
         ...state.playerTeam,
         players: [...playersAfterLoans, ...auctionSignedPlayers],
         chemistry: newChemistry,
-        budget: state.playerTeam.budget + net + auctionBudgetChange + sponsorIncome + businessRevenue,
+        budget: state.playerTeam.budget + net + auctionBudgetChange + sponsorIncome + Math.floor(businessRevenue),
         weeklyExpense: Math.max(0, state.playerTeam.weeklyExpense + auctionSalaryChange - loanSalaryReduction),
-        weeklyRevenue: state.playerTeam.weeklyRevenue + sponsorIncome + Math.floor(businessRevenue),
+        weeklyRevenue: state.playerTeam.weeklyRevenue,
         sponsorContracts: updatedContracts,
         businessEvents: updatedBusinessEvents,
         fanBase: state.playerTeam.fanBase + fanGrowth,
@@ -1261,7 +1279,11 @@ export const useGameStore = create<GameState>((set, get) => {
       gamePhase: 'preseason',
       playerTeam: {
         ...state.playerTeam,
-        players: keptPlayers,
+        players: keptPlayers.map(p => ({
+          ...p,
+          age: p.age + 1,
+          contractYears: Math.max(0, (p.contractYears || 0) - 1),
+        })),
         seasonWins: 0,
         seasonLosses: 0,
         seasonPrize: 0,
@@ -1470,7 +1492,8 @@ export const useGameStore = create<GameState>((set, get) => {
     const opponent = state.availableTeams.find(t => t.id === opponentId);
     if (!tournament || !opponent) return;
     if (!state.registeredTournaments.includes(tournamentId)) return;
-    
+    if (state.completedTournaments.includes(tournamentId)) return;
+
     get().startBP(tournament, opponent);
   },
 
@@ -1648,24 +1671,46 @@ export const useGameStore = create<GameState>((set, get) => {
     const format = match.format;
     const neededWins = format === 'BO5' ? 3 : format === 'BO3' ? 2 : 1;
     
+    // 预计算团队强度与战术加成，避免每张地图都触发 simulateMatch 的全部副作用
+    const teamStrength = get().calculateTeamStrength();
+    const chemistry = get().calculateChemistry();
+    const usedTactic = state.playerTeam.selectedTactic;
+    let tacticBonus = usedTactic.successRateModifier * 20;
+    const teamPositions = state.playerTeam.players.map(p => p.position);
+    usedTactic.bestPositions.forEach(pos => {
+      if (teamPositions.includes(pos as AgentRole)) tacticBonus += 2;
+    });
+    const moodBonus = state.playerTeam.players.reduce((sum, p) => {
+      const mood = p.mood || 'calm';
+      const moodVal = mood === 'excited' ? 2 : mood === 'tired' ? -4 : mood === 'anxious' ? -2 : 0;
+      const hotVal = Math.min(10, (p.hotStreak || 0) * 2);
+      return sum + moodVal + hotVal;
+    }, 0);
+    tacticBonus += moodBonus / Math.max(1, state.playerTeam.players.length);
+
     const mapResults: MapResult[] = [];
     let teamWins = 0;
     let opponentWins = 0;
 
     for (const mapId of pickedMaps) {
       if (teamWins >= neededWins || opponentWins >= neededWins) break;
-      
-      const result = get().simulateMatch(opponent);
+
+      const { teamScore, opponentScore } = simulateMatchLogic(
+        teamStrength,
+        opponent.overallRating,
+        chemistry,
+        tacticBonus
+      );
       const map = state.availableMaps.find(m => m.id === mapId);
-      const winner = result.score.team > result.score.opponent ? 'player' : 'opponent';
-      
+      const winner = teamScore > opponentScore ? 'player' : 'opponent';
+
       if (winner === 'player') teamWins++;
       else opponentWins++;
 
       mapResults.push({
         mapName: map?.chineseName || mapId,
-        teamScore: result.score.team,
-        opponentScore: result.score.opponent,
+        teamScore,
+        opponentScore,
         winner: winner === 'player' ? state.playerTeam.name : opponent.chineseName,
       });
     }
@@ -1699,6 +1744,10 @@ export const useGameStore = create<GameState>((set, get) => {
       matchHistory: [finalResult, ...prev.matchHistory],
       playerTeam: {
         ...prev.playerTeam,
+        wins: overallResult === 'win' ? prev.playerTeam.wins + 1 : prev.playerTeam.wins,
+        losses: overallResult === 'loss' ? prev.playerTeam.losses + 1 : prev.playerTeam.losses,
+        seasonWins: overallResult === 'win' ? prev.playerTeam.seasonWins + 1 : prev.playerTeam.seasonWins,
+        seasonLosses: overallResult === 'loss' ? prev.playerTeam.seasonLosses + 1 : prev.playerTeam.seasonLosses,
         budget: prev.playerTeam.budget + prizeMoney,
         seasonPrize: prev.playerTeam.seasonPrize + prizeMoney,
         vctPoints: prev.playerTeam.vctPoints + vctPointsGain,
@@ -1951,6 +2000,10 @@ export const useGameStore = create<GameState>((set, get) => {
       get().addNotification('预算不足，无法出价');
       return;
     }
+    if (state.playerTeam.players.length >= 7) {
+      get().addNotification('阵容已满（7人上限），无法竞拍');
+      return;
+    }
 
     const updatedAuctions = state.activeAuctions.map(a =>
       a.id === auctionId
@@ -1972,7 +2025,8 @@ export const useGameStore = create<GameState>((set, get) => {
     const state = get();
     const auction = state.activeAuctions.find(a => a.id === auctionId);
     if (!auction || auction.status !== 'active') return;
-    const buyoutPrice = auction.buyoutPrice;
+    const minBidIncrement = Math.max(5000, Math.floor(auction.currentBid * 0.05));
+    const buyoutPrice = Math.max(auction.buyoutPrice, auction.currentBid + minBidIncrement);
     if (state.playerTeam.budget < buyoutPrice) {
       get().addNotification(`预算不足，一口价 $${buyoutPrice.toLocaleString()}`);
       return;

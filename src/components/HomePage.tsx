@@ -489,8 +489,8 @@ export const HomePage = ({ onNavigate }: HomePageProps) => {
                         <p className="text-xs font-display font-bold text-white truncate">{ach.name}</p>
                         <p className="text-[10px] text-gray-500 font-tactical truncate">{ach.description}</p>
                       </div>
-                      {ach.reward.cash && (
-                        <Badge variant="success" size="sm">+${ach.reward.cash.toLocaleString()}</Badge>
+                      {(ach.reward.cash ?? 0) > 0 && (
+                        <Badge variant="success" size="sm">+${ach.reward.cash!.toLocaleString()}</Badge>
                       )}
                     </div>
                   </VCTCard>

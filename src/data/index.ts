@@ -1,10 +1,17 @@
 export type { Agent, AgentRole } from './agents';
 export { agents, roleNames } from './agents';
 export type { Player } from './players';
-export { realPlayers, freeAgents, prospects, getPlayerById, getPlayersByRole, getAgentByName, getPlayerMainAgents } from './players';
+export { realPlayers, freeAgents, prospects, getPlayerById, getPlayersByRole, getAgentById, getPlayerMainAgents } from './players';
 export type { Map } from './maps';
 export { maps, mapTypeNames } from './maps';
 export type { Tournament } from './tournaments';
 export { tournaments, levelNames } from './tournaments';
 export type { Team } from './teams';
 export { realTeams, getTeamById, getTeamsByRegion, getTeamPlayers } from './teams';
+export type { Tactic } from './tactics';
+export { tactics, getTacticById, getTacticsByType, tacticTypeNames } from './tactics';
+export type { Facility } from './facilities';
+export { initialFacilities, getFacilityById, getUpgradeCost } from './facilities';
+export { storyChapters, storyDialogs, tutorialSteps } from './story';
+export type { PlayerPosition } from './images';
+export { images } from './images';
