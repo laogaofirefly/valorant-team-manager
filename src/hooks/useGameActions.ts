@@ -339,7 +339,9 @@ export function useAuctionActions() {
   const canBuyout = useCallback((auctionId: string) => {
     const auction = activeAuctions.find(a => a.id === auctionId);
     if (!auction || auction.status !== 'active') return false;
-    return playerTeam.budget >= auction.buyoutPrice && playerTeam.players.length < 7;
+    const minBidIncrement = Math.max(5000, Math.floor(auction.currentBid * 0.05));
+    const actualBuyoutPrice = Math.max(auction.buyoutPrice, auction.currentBid + minBidIncrement);
+    return playerTeam.budget >= actualBuyoutPrice && playerTeam.players.length < 7;
   }, [activeAuctions, playerTeam.budget, playerTeam.players.length]);
 
   // 竞争程度文本

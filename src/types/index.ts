@@ -673,12 +673,14 @@ export const CONTRACT_OPTIONS: ContractOption[] = [
   { years: 4, signingFeeMultiplier: 1.45, label: '4年顶薪' },
 ];
 
-// 转会窗开启周段（休赛期 17+ 和赛季中段 7-8）
+// 转会窗开启周段（赛季初 1-2、赛季中段 7-8、休赛期 17-22）
 export const TRANSFER_WINDOW_OPEN_WEEKS: number[] = [
-  // offseason
-  17, 18, 19, 20, 21, 22,
+  // preseason
+  1, 2,
   // mid-season
   7, 8,
+  // offseason
+  17, 18, 19, 20, 21, 22,
 ];
 
 // 国籍筛选选项

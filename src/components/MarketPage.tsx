@@ -683,6 +683,7 @@ export const MarketPage = () => {
                   const minBid = getMinBid(auction.id);
                   const isLeading = auction.currentBidder === 'player';
                   const canBuy = canBuyout(auction.id);
+                  const actualBuyout = Math.max(auction.buyoutPrice, minBid);
                   const compLabel = getCompetitionLabel(auction.competitionLevel);
                   const compVariant = auction.competitionLevel === 'high' ? 'danger' : auction.competitionLevel === 'medium' ? 'warning' : 'success';
                   return (
@@ -722,7 +723,7 @@ export const MarketPage = () => {
                           关注战队 {auction.interestedTeams.length}
                         </span>
                         <span className="ml-auto text-[10px] text-valorant-gold font-tactical">
-                          一口价 {formatCurrency(auction.buyoutPrice)}
+                          一口价 {formatCurrency(actualBuyout)}
                         </span>
                       </div>
 
@@ -742,7 +743,7 @@ export const MarketPage = () => {
                           <VCTButton
                             variant="primary"
                             size="sm"
-                            disabled={Number(bidAmounts[auction.id]) <= auction.currentBid || Number(bidAmounts[auction.id]) > budget}
+                            disabled={!bidAmounts[auction.id] || Number(bidAmounts[auction.id]) < minBid || Number(bidAmounts[auction.id]) > budget}
                             onClick={() => handlePlaceBid(auction)}
                           >
                             出价
@@ -755,7 +756,7 @@ export const MarketPage = () => {
                           disabled={!canBuy}
                           onClick={() => handleBuyout(auction)}
                         >
-                          {canBuy ? `一口价买断 ${formatCurrency(auction.buyoutPrice)}` : `一口价 ${formatCurrency(auction.buyoutPrice)}（预算/阵容不足）`}
+                          {canBuy ? `一口价买断 ${formatCurrency(actualBuyout)}` : `一口价 ${formatCurrency(actualBuyout)}（预算/阵容不足）`}
                         </VCTButton>
                       </div>
                     </VCTCard>
