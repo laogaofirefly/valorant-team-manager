@@ -52,7 +52,7 @@ const getRoleStyle = (role: string): { bg: string; text: string; border: string 
 };
 
 export const PlayerCard = ({ player, showAction = false, actionType = 'hire' }: PlayerCardProps) => {
-  const { hirePlayer, releasePlayer, trainPlayer, playerTeam } = useGameStore();
+  const { hirePlayer, releasePlayer, trainPlayer, playerTeam, isTransferWindowOpen } = useGameStore();
   const budget = playerTeam.budget;
   const [showDetails, setShowDetails] = useState(false);
 
@@ -61,6 +61,8 @@ export const PlayerCard = ({ player, showAction = false, actionType = 'hire' }: 
   const canAfford = budget >= player.marketValue;
   const canTrain = isOnTeam && budget >= 10000;
   const roleStyle = getRoleStyle(player.position);
+  const isRosterFull = playerTeam.players.length >= 7;
+  const transferWindowOpen = isTransferWindowOpen();
 
   const handleAction = () => {
     if (actionType === 'hire' && canAfford) hirePlayer(player.id);
@@ -74,17 +76,28 @@ export const PlayerCard = ({ player, showAction = false, actionType = 'hire' }: 
     const baseClass = 'w-full min-h-[40px] font-display font-semibold text-xs tracking-wider clip-corner-sm transition-all';
     
     if (actionType === 'hire') {
+      const canHire = player.isFreeAgent && transferWindowOpen && !isRosterFull && canAfford;
+      let buttonText = `签约 ${formatCurrency(player.marketValue)}`;
+      if (!player.isFreeAgent) {
+        buttonText = '已签约';
+      } else if (!transferWindowOpen) {
+        buttonText = '转会窗关闭';
+      } else if (isRosterFull) {
+        buttonText = '阵容已满';
+      } else if (!canAfford) {
+        buttonText = '资金不足';
+      }
       return (
         <button
           onClick={handleAction}
-          disabled={!canAfford || !player.isFreeAgent}
+          disabled={!canHire}
           className={`${baseClass} ${
-            canAfford && player.isFreeAgent
+            canHire
               ? 'bg-valorant-red hover:bg-valorant-red-light text-white'
               : 'bg-gray-800 text-gray-500 cursor-not-allowed'
           }`}
         >
-          {!player.isFreeAgent ? '已签约' : !canAfford ? '资金不足' : `签约 ${formatCurrency(player.marketValue)}`}
+          {buttonText}
         </button>
       );
     }

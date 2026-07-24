@@ -267,7 +267,7 @@ const createInitialTeam = (defaultTactic: Tactic): PlayerTeam => {
   seasonWins: 0,
   seasonLosses: 0,
   seasonPrize: 0,
-  weeklyRevenue: 0,
+  weeklyRevenue: 20000,
     weeklyExpense: totalSalary,
     fanBase: 10000,
     reputation: 50,
@@ -993,7 +993,9 @@ export const useGameStore = create<GameState>((set, get) => {
     const newChemistry = Math.min(100, state.playerTeam.chemistry + 2 + chemistryBonus * 10);
     
     // 周收支
-    const net = state.playerTeam.weeklyRevenue - state.playerTeam.weeklyExpense;
+    const merchStore = state.playerTeam.facilities.find(f => f.id === 'merch-store');
+    const revenueBonus = merchStore?.effects.revenueBonus || 0;
+    const net = state.playerTeam.weeklyRevenue * (1 + revenueBonus) - state.playerTeam.weeklyExpense;
     
     // 随机事件
     if (Math.random() < 0.3) {
@@ -1162,11 +1164,17 @@ export const useGameStore = create<GameState>((set, get) => {
 
     // 赞助商合同结算
     let sponsorIncome = 0;
+    const teamRating = get().getTeamRating();
     const updatedContracts = state.playerTeam.sponsorContracts.map(contract => {
       if (contract.remainingWeeks <= 0) return contract;
-      const income = contract.weeklyIncome * (contract.satisfaction / 100);
-      sponsorIncome += income;
-      return { ...contract, remainingWeeks: contract.remainingWeeks - 1 };
+      let satisfaction = contract.satisfaction;
+      if (contract.requirements.minRating && teamRating < contract.requirements.minRating) satisfaction -= 5;
+      if (contract.requirements.minWins && state.playerTeam.seasonWins < contract.requirements.minWins) satisfaction -= 3;
+      if (state.playerTeam.seasonWins > state.playerTeam.seasonLosses) satisfaction += 2;
+      satisfaction = Math.max(0, Math.min(100, satisfaction));
+      const income = contract.weeklyIncome * (satisfaction / 100);
+      sponsorIncome += income * (1 + revenueBonus);
+      return { ...contract, satisfaction, remainingWeeks: contract.remainingWeeks - 1 };
     }).filter(contract => contract.remainingWeeks > 0);
 
     // 商业活动结算
@@ -1175,7 +1183,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const updatedBusinessEvents = state.playerTeam.businessEvents.map(event => {
       if (event.status === 'completed') return event;
       const newRemaining = event.remainingWeeks - 1;
-      const weeklyRev = event.revenue / event.duration;
+      const weeklyRev = (event.revenue / event.duration) * (1 + revenueBonus);
       const weeklyFan = event.fanGain / event.duration;
       businessRevenue += weeklyRev;
       fanGain += weeklyFan;
@@ -2455,7 +2463,6 @@ export const useGameStore = create<GameState>((set, get) => {
         ...state.playerTeam,
         budget: state.playerTeam.budget + signingBonus,
         sponsorContracts: [...state.playerTeam.sponsorContracts, contract],
-        weeklyRevenue: state.playerTeam.weeklyRevenue + weeklyIncome,
       },
     });
 

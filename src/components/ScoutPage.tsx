@@ -32,10 +32,11 @@ interface ProspectPlayerCardProps {
   compact?: boolean;
   isOnTeam: boolean;
   canHirePlayer: boolean;
+  hireButtonText: string;
   onHire: (player: Player) => void;
 }
 
-const ProspectPlayerCard = ({ player, compact = false, isOnTeam, canHirePlayer, onHire }: ProspectPlayerCardProps) => {
+const ProspectPlayerCard = ({ player, compact = false, isOnTeam, canHirePlayer, hireButtonText, onHire }: ProspectPlayerCardProps) => {
   const isSigned = player.teamId !== null;
   const style = roleStyles[player.position] || roleStyles.Duelist;
 
@@ -67,7 +68,7 @@ const ProspectPlayerCard = ({ player, compact = false, isOnTeam, canHirePlayer, 
             disabled={!canHirePlayer}
             onClick={() => onHire(player)}
           >
-            {!canHirePlayer ? '资金不足' : '签约'}
+            {hireButtonText}
           </VCTButton>
         )}
       </VCTCard>
@@ -86,7 +87,7 @@ const ProspectPlayerCard = ({ player, compact = false, isOnTeam, canHirePlayer, 
 };
 
 export const ScoutPage = () => {
-  const { playerTeam, scoutPlayer, hirePlayer, allPlayers } = useGameStore();
+  const { playerTeam, scoutPlayer, hirePlayer, allPlayers, isTransferWindowOpen } = useGameStore();
   const {
     youthPlayers,
     draftClass,
@@ -123,7 +124,22 @@ export const ScoutPage = () => {
   }, [allPlayers, scoutHistory]);
 
   const canScout = playerTeam.budget >= SCOUT_COST && !scouting;
-  const canHire = (player: Player) => playerTeam.budget >= player.marketValue && player.teamId === null;
+  const transferWindowOpen = isTransferWindowOpen();
+  const isRosterFull = playerTeam.players.length >= 7;
+
+  const canHire = (player: Player) =>
+    player.teamId === null &&
+    transferWindowOpen &&
+    !isRosterFull &&
+    playerTeam.budget >= player.marketValue;
+
+  const getHireButtonText = (player: Player): string => {
+    if (player.teamId !== null) return '已签约';
+    if (!transferWindowOpen) return '转会窗关闭';
+    if (isRosterFull) return '阵容已满';
+    if (playerTeam.budget < player.marketValue) return '资金不足';
+    return `签约 ${formatCurrency(player.marketValue)}`;
+  };
 
   const handleScout = () => {
     if (!canScout) return;
@@ -265,7 +281,7 @@ export const ScoutPage = () => {
               disabled={!canHire(discoveredPlayer)}
               onClick={() => handleHire(discoveredPlayer)}
             >
-              {!canHire(discoveredPlayer) ? '资金不足' : `▸ 立即签约 ${formatCurrency(discoveredPlayer.marketValue)}`}
+              {canHire(discoveredPlayer) ? `▸ 立即签约 ${formatCurrency(discoveredPlayer.marketValue)}` : getHireButtonText(discoveredPlayer)}
             </VCTButton>
           </VCTCard>
         </VCTCard>
@@ -284,7 +300,7 @@ export const ScoutPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {discoveredProspects.map(player => (
-              <ProspectPlayerCard key={player.id} player={player} compact isOnTeam={player.teamId === playerTeam.id} canHirePlayer={canHire(player)} onHire={handleHire} />
+              <ProspectPlayerCard key={player.id} player={player} compact isOnTeam={player.teamId === playerTeam.id} canHirePlayer={canHire(player)} hireButtonText={getHireButtonText(player)} onHire={handleHire} />
             ))}
           </div>
         )}
@@ -551,7 +567,7 @@ export const ScoutPage = () => {
               ) : (
                 <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                   {scoutHistory.map(player => (
-                    <ProspectPlayerCard key={player.id} player={player} isOnTeam={player.teamId === playerTeam.id} canHirePlayer={canHire(player)} onHire={handleHire} />
+                    <ProspectPlayerCard key={player.id} player={player} isOnTeam={player.teamId === playerTeam.id} canHirePlayer={canHire(player)} hireButtonText={getHireButtonText(player)} onHire={handleHire} />
                   ))}
                 </div>
               )}
